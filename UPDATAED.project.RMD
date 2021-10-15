@@ -1,0 +1,838 @@
+---
+title: "Statisical Analysis of Bank Data"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE,message=FALSE,warning=FALSE)
+```
+
+
+
+Team ID: Group 29
+
+Name (tasks): Amay Kharbanda (LASSO, Logistic Regression, parts of the report)
+
+Name (tasks): David Wong (Decision Tree Classification, Literature Review, parts of the report)
+
+Name (tasks): Alejandro Medina (Neural Networks, Random Forest, parts of the report)
+
+
+## Introduction
+
+
+In this project, our goal is to analyze data collected from 2008-2010 of a Portuguese bank marketing campaign containing client descriptions and engagement. We are provided a large dataset labeled “bank-additional-full.csv” which contains the data collected in its entirety. We are also provided a smaller dataset containing randomly sampled data from “bank-additional-full.csv” which is labeled as “bank-additional.csv”. This smaller dataset allows us to run computationally intensive algorithms and will be known as our training data. The larger dataset will be used to test any models derived from our smaller dataset and will be known as our testing data. 
+
+Our ultimate goal for this analysis is to answer our primary statistical question of interest. We want to develop a statistical model that accurately predicts whether a client will sign on to a long-term deposit or not. This begs the question, how would we formulate an accurate model and what attributes would it consist of? Within this analysis, we will develop a range of statistical models using different methods learned in class. We will compare these methods and build three different classification models which include logistic regression, classification tree, and random forest. These models will then be used against our testing data. This will allow us to find model accuracy and in turn, will help decide which model is best at predicting who will sign onto a long-term deposit. 
+
+
+
+
+
+## Statistical questions of interest
+
+
+Our primary statistical question of interest is determining an accurate prediction model and evaluating what significant attributes it would utilize. The secondary question we seek to answer is to find the model with the highest accuracy and prediction rate.
+
+
+
+## Population and study design
+
+
+The target population is clients who will sign on to a long-term deposit for the bank. We will be utilizing a training dataset and a full dataset. The training data is randomly sampled data pulled from the full dataset containing around 41,000 different subjects. Below we have included the input and output variables within this dataset along with helpful descriptions to interpret each one. 
+
+\newpage
+
+
+### Variables in the Data Set
+
+  Input Variables:
+
+ 
+ 
+   bank client data:
+   
+   
+   
+   1 - age (numeric)
+   
+   
+   
+   2 - job : type of job (categorical: "admin.","blue-collar","entrepreneur","housemaid","management","retired","self-employed","services","student","technician", "unemployed","unknown")
+   
+   
+   
+   
+   3 - marital : marital status (categorical: "divorced","married","single","unknown"; note: "divorced" means divorced or widowed)
+   
+   
+   
+   
+   
+   4 - education (categorical: "basic.4y","basic.6y","basic.9y","high.school","illiterate","professional.course", "university.degree","unknown")
+   
+   
+   
+   
+   
+   5 - default: has credit in default? (categorical: "no","yes","unknown")
+   
+   
+   
+   
+   
+   6 - housing: has housing loan? (categorical: "no","yes","unknown")
+   
+   
+   
+   
+   7 - loan: has personal loan? (categorical: "no","yes","unknown")
+   
+   
+   
+   
+   # related with the last contact of the current campaign:
+   
+   
+   8 - contact: contact communication type (categorical: "cellular","telephone") 
+   
+   
+   
+   9 - month: last contact month of year (categorical: "jan", "feb", "mar", ..., "nov", "dec")
+   
+   
+   
+   
+  10 - day_of_week: last contact day of the week (categorical: "mon","tue","wed","thu","fri")
+  
+  
+  
+  
+  11 - duration: last contact duration, in seconds (numeric).
+  
+  
+  
+  
+   # other attributes:
+   
+   
+  12 - campaign: number of contacts performed during this campaign and for this client (numeric, includes last contact)
+  
+  
+  
+  
+  13 - pdays: number of days that passed by after the client was last contacted from a previous campaign (numeric; 999 means client was not previously contacted)
+  
+  
+  
+  
+  14 - previous: number of contacts performed before this campaign and for this client (numeric)
+  
+  
+  
+  15 - poutcome: outcome of the previous marketing campaign (categorical: "failure","nonexistent","success")
+  
+  
+  
+  
+   # social and economic context attributes
+   
+   
+   
+  16 - emp.var.rate: employment variation rate - quarterly indicator (numeric)
+  
+  
+  
+  17 - cons.price.idx: consumer price index - monthly indicator (numeric)   
+  
+  
+  
+  18 - cons.conf.idx: consumer confidence index - monthly indicator (numeric)   
+  
+  
+  
+  19 - euribor3m: euribor 3 month rate - daily indicator (numeric)
+  
+  
+  
+  20 - nr.employed: number of employees - quarterly indicator (numeric)
+  
+  
+  
+
+  Output variable (desired target):
+  
+  
+  
+  21 - y - has the client subscribed a term deposit? (binary: "yes","no")
+
+
+
+
+
+
+
+\newpage
+
+
+
+## Analysis Plan
+
+Our analysis plan consists of feature selection, model design, and model comparisons. Our ultimate goal is to implement a model that will accurately predict whether or not a client will sign onto a long term deposit. For feature selection, we plan to implement LASSO to reduce the number of predictors within our models. Our goal is to avoid overfitting our models by overloading them with too many predictor variables. Once feature reduction has been achieved we plan on fitting two different models using the predictors selected. These models will be classification based as we are working with many categorical variables and binary output. The first model we plan to implement is a logistic regression model, and the second model we plan to implement is a tree classification model. We also plan on fitting a random forest model which deals with feature selection within its function, so it will be fit separately from the predictors used for our first two models. Once each model has been implemented, we will compare the models using the AUC statistic taken from the ROC curve to conclude which model is best suited for predicting whether or not someone will sign onto a long term deposit. Also, we plan on exploring and implementing a model using neural networks.
+
+
+
+
+
+
+
+\newpage
+
+## Analysis
+
+### LASSO and Feature Selection
+
+The Least Absolute Shrinkage and Selection Operator(LASSO) is a method used to perform regularization and feature selection for a given dataset. The operation of LASSO penalizes complexity in $\beta$, and often this leads to values of  $\beta$ minimizing exactly to 0. This means that the minimization of $\beta$ produces a sparse model which can be modulated by changing $\lambda$. The mathematical interpretation of the penalization is given below for reference:
+
+For LASSO we choose $\beta_0,\beta_1,...,\beta_k$ to minimize:
+\begin{center}
+
+$avg[L(outcome,\beta_0+\beta_1x_1+...+\beta_kx_k)]+\lambda P(\beta_1,...,\beta_k)$ $where$
+
+$P(\beta_1,...,\beta_k) = |\beta_1|+...+|\beta_k|$
+
+\end{center}
+
+In regards to this project, we will utilize LASSO to minimize our predictor variables and disregard predictors that minimize to 0. We will use the remaining predictors as a reference for our model production. When fitting our training dataset using the LASSO function in R, we will also make use of cross-validation. Cross-validation is used to assess the predictive performance of the models produced, especially on unseen data. 
+
+
+
+
+
+
+
+### Logistic Regression
+Logistic regression is what is considered to be a likelihood-based machine learning method. When fitting a logistic regression model we generally want to choose parameters in a model to maximize the likelihood of observing a collection of data. This is the equivalent of maximizing the log-likelihood or minimizing the negative-log-likelihood. For a model with binary outcome $y$ we often model the probability y = 1 as $f(x)$. Below is a mathematical interpretation of minimizing the negative-log-likelihood in terms of a model, known as logistic regression:
+
+
+$L(y,f(x)) = -y \cdot log(\frac{f(x)}{1-f(x)}) + log(1-f(x))$
+
+$log(\frac{f(x)}{1-f(x)}) = x_1\beta_1+...+x_p\beta_p$ 
+
+equivalently
+
+$f(x) = \frac{e^{x_1\beta_1+...+x_p\beta_p}}{1+e^{x_1\beta_1+...+x_p\beta_p}}$
+
+Logistic Regression is a type of classification algorithm that can be used to predict a binary outcome, given a set of predictors. In regards to this project, we will implement a logistic regression model using our training data to predict the probabilities of given binary outcomes. The model will be fit using predictors obtained from our LASSO feature selection method. We will test the model against our testing data to determine the accuracy of the model. 
+
+
+
+
+\newpage
+
+
+
+### Decision Tree Classification
+
+Decision tree learning is one of the predictive modeling approaches used in statistics and machine learning. It uses a decision tree (as a predictive model) to go from observations about an item (represented in the branches) to conclusions about the item's target value or response (represented in the leaves). Tree models where the target variable can take a discrete set of values are called classification trees; in these tree structures, leaves represent class labels and branches represent conjunctions of features that lead to those class labels.
+
+For a classification tree, we predict that each observation belongs to the most commonly occurring class of training observations in the region to which it belongs. Further classification is conducted through a process known as binary recursive partitioning. This approach is also commonly known as divide and conquer because it splits the data into subsets, which are then split repeatedly into even smaller subsets, and so on until the process stops when the algorithm determines the data within the subsets are sufficiently homogeneous, or another stopping criterion has been met. In other words, we can then repeat this splitting procedure at each child node until the leaves are pure. This means that the samples at each leaf node all belong to the same class. In practice, we may set a limit on the depth of the tree to prevent overfitting. We compromise on purity here somewhat as the final leaves may still have some impurity.
+
+
+
+
+
+
+### Random Forests
+
+Random forests are an ensemble learning method for classification, regression, and other tasks that operate by constructing a multitude of decision trees at training time and outputting the class that is the mode of the classes (classification) or mean/average prediction (regression) of the individual trees. Random forests correct for decision trees' habit of overfitting to their training set. They provide an improvement over bagged trees by way of a small tweak that de-correlates the trees. Bagging (Bootstrap Aggregation) is a technique used to reduce the variance when we average the trees. Due to this, random forests generally outperform decision trees.
+
+The training algorithm - Given a training set $X = x_1, …, x_n$ with responses $Y = y_1, …, y_n$ bagging repeatedly ($B$ times) selects a random sample with replacement of the training set and fits trees to these samples:
+
+For $b = 1, ..., B$,
+
+
+
+- Sample, with replacement, $n$ training examples from $X, Y$ call these $X_b, Y_b$.
+
+
+
+
+- Train a classification or regression tree $f(b)$ on $X_b, Y_b$.
+
+
+
+
+- After training, predictions for unseen samples $x’$ can be made by averaging the predictions from all the individual regression trees on $x’$:
+
+
+
+\begin{center}
+$\hat{f} = \frac{1}{B} \sum_{b = 1}^{B} f_b (x’)$
+
+or by taking the majority vote in the case of classification trees.
+\end{center}
+
+
+
+
+
+```{r}
+
+library(ISLR)
+library(glmnet)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(tree)
+library(rpart)          
+library(rpart.plot)     
+library(randomForest)   
+library(gbm)   
+library(class)
+library(randomForest)
+library(ggiraphExtra)
+```
+
+
+
+
+
+```{r}
+
+#Reading Data SET
+set.seed(1)
+setwd("C:/Users/alex/Desktop/STATISTICS COURSES/STA 141A/Final Project")
+
+train.bank <- read.table("bank-additional/bank-additional.csv", head = T, sep = ";")
+
+full.bank <- read.table("bank-additional/bank-additional-full.csv", head = T, sep = ";")
+
+```
+
+
+\newpage 
+## Data Manipulation
+
+### Categorical Transformation
+To build statistical models, we need to be able to run our data through computationally intensive algorithms, but large datasets don't tend to do well in regards to running time. This is where the functionality of our training dataset comes into play. Given a smaller dataset containing sampled data from our full dataset, we can utilize the data in algorithms that are much more computationally intensive. From this point forward we will be working with our training dataset for model fabrication, and our full dataset will be used for testing. For the functionality of a few functions, inputs need to be provided as numerical values. Given the fact that we are working with categorical variables, our first step is to build and transform our training data into a new dataset. It is a simple process of data manipulation where we transform our categorical values into numerical values. As an example, say a categorical variable labeled color has three possible outcomes: blue, yellow, and red. Transformation of this data would simply change each outcome to a numerical value. Given this, blue would transform to 1, yellow to 2, and red to 3. Let's observe a sample of our variables to display the data before manipulation.
+(Note: it is also worth mentioning that all values labeled "unknown" in our training dataset will be transformed to NULL)
+
+
+
+
+```{r echo=FALSE}
+
+set.seed(1)
+data.train = train.bank
+data.train[data.train == "unknown"] = NA
+head(data.train, n = 4)
+
+```
+
+
+
+Now let's go ahead and observe our variables after the numerical transformation of our categorical values and removal of NA values
+
+
+```{r,echo = FALSE}
+data.train$job = data.train$job %>% as.factor() %>% as.numeric()
+data.train$marital = data.train$marital %>% as.factor() %>% as.numeric()
+data.train$education = data.train$education %>% as.factor() %>% as.numeric() 
+data.train$default = data.train$default %>% as.factor() %>% as.numeric()
+data.train$housing = data.train$housing %>% as.factor() %>% as.numeric() 
+data.train$loan = data.train$loan %>% as.factor() %>% as.numeric()
+data.train$contact = data.train$contact %>% as.factor() %>% as.numeric() 
+data.train$month = data.train$month %>% as.factor() %>% as.numeric() 
+data.train$day_of_week = data.train$day_of_week %>% as.factor() %>% as.numeric()
+data.train$poutcome = data.train$poutcome %>% as.factor() %>% as.numeric()
+data.train$y = data.train$y %>% as.factor() %>% as.numeric() - 1
+
+data.train = na.omit(data.train)
+data.train = data.train
+
+head(data.train, n = 4)
+
+x_training = model.matrix(y~.,data.train)[,-1]
+
+y_training = data.train %>% 
+  select(y)%>%
+  unlist() %>%
+  as.factor() %>%
+  as.numeric()
+
+y_training = (ifelse(y_training == 2, 1, 0))
+
+```
+
+
+As can be observed our training data has now been transformed from categorical variables to numerical. This same process will be performed on our full dataset as the testing functionality of a few of the functions used within the analysis rely on numerical values. Given that both the datasets contain the same predictors and response variables, we will refrain from outputting the full dataset to avoid redundancy.
+
+
+
+```{r,echo = FALSE}
+### Full data manipulation
+
+
+data.full = full.bank
+data.full[data.full == "unknown"] = NA
+data.full = na.omit(data.full)
+
+data.full$job = data.full$job %>% as.factor() %>% as.numeric()
+data.full$marital = data.full$marital %>% as.factor() %>% as.numeric()
+data.full$education = data.full$education %>% as.factor() %>% as.numeric() 
+data.full$default = data.full$default %>% as.factor() %>% as.numeric()
+data.full$housing = data.full$housing %>% as.factor() %>% as.numeric() 
+data.full$loan = data.full$loan %>% as.factor() %>% as.numeric()
+data.full$contact = data.full$contact %>% as.factor() %>% as.numeric() 
+data.full$month = data.full$month %>% as.factor() %>% as.numeric() 
+data.full$day_of_week = data.full$day_of_week %>% as.factor() %>% as.numeric()
+data.full$poutcome = data.full$poutcome %>% as.factor() %>% as.numeric()
+data.full$y = data.full$y %>% as.factor() %>% as.numeric() - 1
+data.full = data.full
+
+x_full = model.matrix(y~.,data.full)[,-1]
+
+y_full = data.full %>% 
+  select(y)%>%
+  unlist() %>%
+  as.factor() %>%
+  as.numeric()
+
+y_full = (ifelse(y_full == 2, 1, 0))
+
+
+```
+
+
+
+
+
+
+## LASSO for Feature Selection
+
+
+### LASSO using Training data
+In this section, we will focus on the implementation of LASSO. We will utilize the glmnet package which allows for the implementation of both ridge and LASSO within the same function. To fit the LASSO model we will be using our training dataset which will then be tested against using the full dataset using the *predict* function. To implement LASSO rather than Ridge Regression, we will set our alpha = 1 within our function. We also have to take into consideration that since our response variable produces a binary output we must set family = binomial. We will also allow the function to produce its own $\lambda$ for now. Utilizing these settings for our function, we fit our LASSO model using our training dataset. We then plot our model below:
+
+
+```{r,echo = FALSE}
+lasso_mod = glmnet(x_training,y_training,alpha = 1,family = "binomial")
+plot(lasso_mod)
+
+```
+
+The given plot gives us the L1 Regularization of our variables. As can be observed, a few of our predictors are minimizing to zero. We want to be able to extract this information but before we predict our coefficient values our next step is to find an optimal value of $\lambda$ using cross-validation. This will ensure that the LASSO model will perform well with data that has not been seen.    
+
+\newpage
+
+
+### Cross-validation of our LASSO model
+Here we fit the same model as we did before, but instead use the cv.glmnet function to perform cross-validation on our training set. We then plot the results of cross-validation for observational interpretation. The plot is given below: 
+
+
+```{r, echo = FALSE,out.width ="83%"}
+cv.out = cv.glmnet(x_training,y_training,alpha = 1,family = "binomial")
+plot(cv.out)
+```
+
+
+
+
+What is shown in this plot is the values for log($\lambda$). As the values move towards the right of the plot, the penalization increases, meaning more of the predictor variables are being excluded from our model. We want to pick the lambda value that reduces over-fitting for our model yet has enough predictors to build an accurate model. The process of picking a lambda will be discussed next.
+
+
+
+
+### Choosing Lambda and Predicting Coefficients
+Our goal is to find the smallest value of lambda to predict our coefficients using the full dataset. This can easily be achieved as the function cv.glmnet stores the most optimal lambda under the label *lambda.min*. The next step is to pinpoint exactly what coefficients converged to 0 utilizing the full dataset. We do this by fitting a LASSO model on our full dataset and utilizing our predict function. Our function takes in the full dataset model, the type of values we want to predict(coefficients in this case), and the optimal lambda we extracted from our cross-validated training model. Below are the coefficient values that were produced:
+
+
+
+
+```{r,echo = FALSE}
+bestlam = cv.out$lambda.min
+names(bestlam) = "Best Lambda"
+bestlam
+
+out = glmnet(x_full, y_full, alpha = 1) 
+lasso_coef = predict(out, type = "coefficients", s = bestlam)[1:21,] 
+lasso_coef
+
+rem_feat = c(5,6,14)
+
+
+
+
+
+```
+We can interpret the variables default, housing, and previous as the predictors that we may remove from our statistical models. Moving forward with this analysis we will be excluding these variables from our predictive models. 
+
+
+## Logistic Regression
+
+### Fitting the Model and Model Accuracy
+After running our feature selection method and obtaining the unimportant predictors, we can proceed with eliminating them and creating our model using Logistic Regression.
+
+
+
+```{r echo=FALSE}
+library(pROC)
+
+logistic_model = glm(y~.,data = data.train[,-rem_feat],family = "binomial")
+
+probabilities = logistic_model %>% predict(data.full[,-rem_feat], type = "response") 
+classes = ifelse(probabilities > 0.5, 1, 0)
+model_acc = mean(classes == y_full)
+names(model_acc) = "Model Accuracy"
+model_acc
+
+```
+
+Using the glm() function, we compute our logistic regression model. We apply our binary response variable to all the predictors and calculate coefficients for each.
+
+
+We proceed to calculate the probabilities of each observation from the data set in terms of our logistic model (after removing the unimportant variables). Then we apply the condition of “probabilities > 0.5” to segregate the model probabilities and obtain the model’s predicted values. Finally, we take the average of the results from the condition to determine the final model accuracy which comes up to 0.899 or approximately 90 percent.
+
+
+### ROC and AUC for Logistic Model
+
+
+Now, we find the ROC (Receiver Operating Characteristics) curve. For that, we use our predicted response calculated from earlier and apply our roc() function. From this, we obtain our ROC curve.
+
+
+
+
+```{r,echo = FALSE,out.width ="83%"}
+test_prob1 = predict(logistic_model, newdata = data.full[,-rem_feat], type = "response")
+roc_fit1 = roc(data.full$y ~ test_prob1, plot = TRUE, print.auc = TRUE)
+
+
+```
+
+
+
+Since the ROC plot shows the trade-off between sensitivity and specificity, it curves closer to the top - left of the graph thus indicating better performance. This information is complemented by the Area Under the Curve (AUC) value, which, in this case, is 0.92 on a scale of 0 to 1. This reflects high accuracy.
+
+
+
+
+\newpage 
+
+## Tree Classification
+
+
+For this model, we decided to implement the feature selection criteria from LASSO and apply the concept of classification tree models to construct the final model for predictions. Our decision variable (or response) is of binary output making the classification categorical or discrete. The key idea is to use a decision tree to partition the data space into cluster (or dense) regions and empty (or sparse) regions.
+
+
+### Fitting the Tree
+
+```{r,echo=FALSE}
+
+training_tree_data = train.bank
+training_tree_data[training_tree_data == "unknown"] = NA
+training_tree_data = na.omit(training_tree_data)
+
+data.full.tree = full.bank
+data.full.tree[data.full.tree == "unknown"] = NA
+data.full.tree = na.omit(data.full.tree)
+
+fit = rpart(y~.,data = training_tree_data[,-rem_feat],method = "class")
+rpart.plot(fit)
+
+```
+
+Here the rpart function computes the complete classification tree and the tree is displayed using the rpart.plot() function.
+
+
+
+
+So, to classify our decision tree, we calculate our complexity parameter (CP) to select the optimal tree size. If the cost of adding another variable to the decision tree from the current node is above the value of CP, then tree building does not continue. Additionally, CP is used to validate our decision tree along with cross-validation error. To do so, we use the printcp() and plotcp() functions. We then examine and plot the resulting CP and other errors from each split
+
+
+```{r,echo = FALSE}
+
+plotcp(fit)
+
+printcp(fit)
+
+```
+
+
+
+
+From the output of the printcp() function, we can determine the optimal CP value for our model by selecting the least amount of “xerror” which is the cross-validation error. We can see that the best CP has CP = 0.013514, xerror = 0.84054, and number of splits = 8. This CP is chosen for our model.
+
+
+```{r,echo = FALSE}
+tree.cv = rpart(y~.,data = training_tree_data[,-rem_feat],
+                method = "class", cp = 0.013514)
+rpart.plot(tree.cv)
+```
+
+
+
+
+## Tree Interpretation
+
+Here similar to the previous rpart() function above, we compute the new tree classification with 8 splits.
+
+We find that the clients who are most likely to sign onto a long term deposit are those who have more than 5088 employed and who were in contact with for a duration greater than 14 minutes, but if their duration is less than 14 minutes but greater than 10 minutes and they are not employed in admin, housemaid, management, retired, service job, a student, or unemployed, and do not have an education that is basic, 4years, or professional course they are more likely to respond yes to the response variable. Of the people who have less than 5088 employed they are more likely to respond yes if their pdays (number of days since the last contact) is less than 14, or if it is then they are more likely if their duration is greater than 7 minutes.
+
+
+```{r,echo = FALSE}
+
+new = predict(tree.cv, data.full.tree, type = "class")
+
+ACC = mean(data.full.tree$y == new)
+names(ACC) = "Model Accuracy"
+ACC
+
+```
+
+Here we use the predict function to return the predicted response of our Decision Tree model. We compare and compute these responses to our complete dataset to find our final accuracy which turns out to be 0.899, which indicates high accuracy.
+
+
+
+
+\newpage
+
+
+### ROC and AUC for Classification Tree
+
+
+
+Now, we find the ROC (Receiver Operating Characteristics) curve. For that, we use our predicted response calculated from earlier and apply our roc() function. From this, we obtain our ROC curve.
+
+
+
+```{r,echo = FALSE}
+test_prob2 = predict(tree.cv, newdata = data.full.tree, type = "prob")
+roc_test2 = roc(data.full.tree$y ~ test_prob2[,2], plot = TRUE, print.auc = TRUE)
+```
+
+
+
+Since the ROC plot shows the trade-off between sensitivity and specificity, it curves closer to the top - left of the graph thus indicating a good performance. This information is complemented by the Area Under the Curve (AUC) value, which in this case, is 0.84 on a scale of 0 to 1. This reflects decent accuracy.
+
+
+
+\newpage
+## Random Forest
+
+
+### Fitting a Random Forest
+For Random Forest, we do not require a feature selection procedure as the algorithm sorts the predictors based on importance by itself.
+Here, we run our function, randomForest(), to fit the model. We input our binary response variable along with all the observations from our training dataset. Below we have a few outputs derived from our fitted model:
+
+
+
+```{r,echo=FALSE,out.width ="90%"}
+set.seed(1)
+rf.random = randomForest(as.factor(y)~., data = training_tree_data,importance = T)
+importance(rf.random)
+varImpPlot(rf.random)
+
+```
+
+
+
+We apply importance() and varImpPlot() functions to assess and plot the usefulness of certain predictors. They are ranked in terms of most important to least. Here you can see that predictor “duration” is the most important according to the Mean Decrease Accuracy (MDA) as well as the Mean Decrease Gini (MDG) graphs. MDA gives a rough estimate of the loss in prediction performance when that particular variable is omitted from the training set whereas MDG is a measure of node impurity. According to this, “duration” has a high loss in prediction performance thereby becoming an essential predictor. On the other hand, it is high on the MDG graph implying a high node impurity, i.e. it is a good feature for the data to be split on thereby playing an important role in classification.
+
+
+
+
+
+```{r,echo = FALSE }
+print(rf.random)
+```
+
+
+
+
+Moreover, from the output of our print() function, we can see an Out-Of-Bag (OOB) error estimate which is 9.9 percent. This is a low value for an error estimate implying a highly accurate model of about 90.1 percent accuracy.
+
+
+
+
+### ROC and AUC for Random Forest
+
+
+
+```{r,echo = FALSE,out.width ="83%"}
+prob_fit = predict(rf.random,newdata = data.full.tree, type = "prob")
+roc_fit3 =roc(data.full.tree$y ~ prob_fit[,1],plot = TRUE, print.auc = TRUE)
+```
+
+
+Since the ROC plot shows the trade-off between sensitivity and specificity, it curves closer to the top - left of the graph thus indicating better performance. This information is complemented by the Area Under the Curve (AUC) value, which is 0.942 on a scale of 0 to 1. This reflects high precision and a great ability for our model to predict our output variable.
+
+
+
+
+
+\newpage
+
+
+### ROC and AUC Model Comparisons
+
+In this section, we will go through the process of selecting an optimal model from the ones that we have implemented. The statistic we will be using for comparisons will be the AUC(Area under the curve) extracted from our ROC(Receiver Operator Characteristics) curves. To reiterate ROC is what is known as a probability curve, while AUC can be represented as a measurement of separability. The higher the AUC the better the model is at predicting binary outcomes. Now that we understand our test measurements let's take a look at the collection of ROC curves that have been produced throughout the analysis.
+
+
+
+```{r, echo = FALSE}
+plot(roc_fit1,col = "Red")
+plot(roc_test2,add = TRUE,col = "Blue")
+plot(roc_fit3,add = TRUE, col = "Green")
+
+legend("bottomright", legend = c("ROC Logistic", "ROC Tree", "ROC Random Forest"), pch = 23, col = c("red", "blue","green"))
+
+```
+
+For convenience we will also output the AUC values for each curve below:
+
+```{r, echo = FALSE}
+auc_1 = as.numeric(roc_fit1$auc)
+auc_2 = as.numeric(roc_test2$auc)
+auc_3 = as.numeric(roc_fit3$auc)
+
+all_auc = c(auc_1,auc_2,auc_3)
+names(all_auc) = c("Logistic AUC","Tree AUC", "     Random Forest AUC")
+all_auc
+
+
+
+```
+
+
+The higher the AUC value, the better a model is at distinguishing between classes. In our case, the AUC values collected tell us how well the models can distinguish between whether or not a client will sign onto a long term deposit. We are comparing three different classification models. The first is logistic, which was fitted with the predictors chosen from our LASSO implementation. Our second is tree classification, which was also fit using the predictors chosen from LASSO. The third is Random Forest which uses its method for feature reduction. We are looking for a model that has the highest AUC value. According to our AUC values the model that is best fit to predict our client outcomes would be Random Forest, thus based on AUC, our model of choice will be the Random Forest model. 
+
+\newpage
+
+
+## Results and Conclusion
+
+
+The overall objective of this analysis was to determine if we could construct a model that could accurately predict client decisions on long term deposit accounts. We took advantage of algorithms to achieve feature selection to avoid overfitting and we utilized different libraries and functions to build three different predictive statistical models. Two of the models used predictors chosen from the LASSO method, while the third performed its own feature selection. We were able to construct ROC curves for each of these statistical models which in turn gave us the AUC values needed to compare the accuracy of our models. We concluded that our random forest model was the most accurate out of all three, having an AUC value of 0.9418105.
+
+
+
+
+
+
+
+
+
+
+
+
+\newpage
+
+
+
+### Extra Credit Neural Networks
+
+## Neural Network
+
+### Extra Credit Neural Networks
+
+## Neural Network
+
+This portion of the project has been reserved for a method of analysis not taught within the course. The method chosen to be implemented here is neural networks. 
+
+Neural networking is an unsupervised machine learning model that employs a Backpropagation or feed-forward algorithm that is described by some to go “beyond regression”. A neural network is an information processing structure that connects elements. Each element has a connection that branches out into as many connections as is necessary. A neural network is a universal function approximator, so we can use it for any function with more prediction power compared to our logistic regression model. In this specific study, we can use neural networks to predict the willingness of clients to sign on to a long-term deposit based on many predictors. We chose this as an alternative method of a regression model with more power that works efficiently in this scenario due to the large training data provided (Bergmeir & Benitez, 2012).
+
+
+
+
+### Fitting the Neural Network
+```{r,out.width = "110%"}
+
+library(tidyverse)
+library(neuralnet)
+set.seed(1)
+
+
+data.train = train.bank
+
+data.train$job = data.train$job %>% as.factor() %>% as.numeric()
+data.train$marital = data.train$marital %>% as.factor() %>% as.numeric()
+data.train$education = data.train$education %>% as.factor() %>% as.numeric() 
+data.train$default = data.train$default %>% as.factor() %>% as.numeric()
+data.train$housing = data.train$housing %>% as.factor() %>% as.numeric() 
+data.train$loan = data.train$loan %>% as.factor() %>% as.numeric()
+data.train$contact = data.train$contact %>% as.factor() %>% as.numeric() 
+data.train$month = data.train$month %>% as.factor() %>% as.numeric() 
+data.train$day_of_week = data.train$day_of_week %>% as.factor() %>% as.numeric()
+data.train$poutcome = data.train$poutcome %>% as.factor() %>% as.numeric()
+data.train$y = data.train$y %>% as.factor() %>% as.numeric() - 1
+
+data.train$y = ifelse(data.train$y == "yes",1,0)
+
+
+data.full = full.bank
+data.full[data.full == "unknown"] = NA
+data.full = na.omit(data.full)
+
+data.full$job = data.full$job %>% as.factor() %>% as.numeric()
+data.full$marital = data.full$marital %>% as.factor() %>% as.numeric()
+data.full$education = data.full$education %>% as.factor() %>% as.numeric() 
+data.full$default = data.full$default %>% as.factor() %>% as.numeric()
+data.full$housing = data.full$housing %>% as.factor() %>% as.numeric() 
+data.full$loan = data.full$loan %>% as.factor() %>% as.numeric()
+data.full$contact = data.full$contact %>% as.factor() %>% as.numeric() 
+data.full$month = data.full$month %>% as.factor() %>% as.numeric() 
+data.full$day_of_week = data.full$day_of_week %>% as.factor() %>% as.numeric()
+data.full$poutcome = data.full$poutcome %>% as.factor() %>% as.numeric()
+data.full$y = data.full$y %>% as.factor() %>% as.numeric() - 1
+
+data.full$y = ifelse(data.full$y == "yes",1,0)
+
+
+```
+
+
+
+
+We first fit the model using the function neuralnet. Within this function, we're fitting our training data along with the predictors chosen from LASSO. We set the linear.output = FALSE and our act.fct = logistic because we are working with binary outputs and we want our predict function to return probabilities. Below we have plotted the produced neural network. Along with the model accuracy.
+
+
+```{r,echo = FALSE}
+nn = neuralnet(y~., data = data.train[,-rem_feat],linear.output = FALSE, hidden = 3,err.fct = "sse", act.fct = 
+                 "logistic")
+plot(nn,rep = "best")
+
+Predict = predict(nn,data.full[,-rem_feat], type = "prob")
+
+prob <- Predict
+pred <- ifelse(prob>0.5, 1, 0)
+
+modacc = mean(pred == y_full)
+names(modacc) = "Model Accuracy"
+modacc
+
+```
+
+
+\newpage
+
+On the far left of our plot, we have our predictors as input. The arrows with numerical value are weights and can be seen as how much the variable contributes to the next node. The blue node and arrows contribute to the bias weights. The nodes in the middle of the plot are what is considered our hidden nodes, which are used for the learning process of our neural network. The last node on the neural network is our response variables or our output. We can also see from above that our model accuracy is quite good at 87.34% accuracy, yet when compared to the accuracy of the other models used in this analysis it falls a little short. So we can conclude that although the model is still fairly accurate, in terms of our analysis and data, one of our other models would be preferred. 
+
+
+# References
+
+Bergmeir, C., & Benitez, J. M. (2012). Neural Networks in R Using the Stuttgart Neural Network Simulator: RSNNS. Journal of Statistical Software, 46(7). https://doi.org/10.18637/jss.v046.i07.
+
+
+
+
+
+
+
+
+
+
+
+
+
