@@ -10,17 +10,16 @@ library(rpart.plot)
 library(randomForest)   
 library(gbm)   
 library(class)
-require(randomForest)
 library(ggplot2)
 library(dplyr)
 library(LICORS)
 library(ggiraphExtra)
 library(neuralnet)
-
+library(pROC)
 
 
 set.seed(1)
-setwd("C:/Users/alex/Desktop/STATISTICS COURSES/STA 141A/Final Project")
+setwd("STA 141A/Final Project")
 
 
 train.bank <- read.table("bank-additional/bank-additional.csv", head = T, sep = ";")
@@ -28,13 +27,18 @@ train.bank <- read.table("bank-additional/bank-additional.csv", head = T, sep = 
 full.bank <- read.table("bank-additional/bank-additional-full.csv", head = T, sep = ";")
 head(train.bank)
 
-###Training Data Manipulation
+### Training Data Manipulation
 
+# Here we set seed to avoid having our values fluctuate
 set.seed(1)
 data.train = train.bank
+
+# Here we clean and organize the data. Firstly, we convert the unknowns in the dataset to NA for easier analysis.
+
 data.train[data.train == "unknown"] = NA
 str(data.train)
 
+# Here we encode our categorical data values to numeric data types for modeling purposes
 data.train$job = data.train$job %>% as.factor() %>% as.numeric()
 data.train$marital = data.train$marital %>% as.factor() %>% as.numeric()
 data.train$education = data.train$education %>% as.factor() %>% as.numeric() 
@@ -47,18 +51,17 @@ data.train$day_of_week = data.train$day_of_week %>% as.factor() %>% as.numeric()
 data.train$poutcome = data.train$poutcome %>% as.factor() %>% as.numeric()
 
 
-
+# This is our training data
 
 x_training = model.matrix(y~.,data.train)[,-1]
 head(x_training)
-
-
-
 
 y_training = data.train$y %>% 
   unlist() %>%
   as.factor() %>%
   as.numeric()
+
+# This is to offset our y values by 1 to make our modeling easier
 
 y_training = (ifelse(y_training == 2, 1, 0))
 y_training
@@ -70,12 +73,14 @@ one/two
 
 
 
-###Full Data Manipulation
+### Full Data Manipulation
 
+# Converting unknowns to NA's
 data.full = full.bank
 data.full[data.full == "unknown"] = NA
 data.full = na.omit(data.full)
 
+# Encoding categorical values
 data.full$job = data.full$job %>% as.numeric()
 data.full$marital = data.full$marital %>% as.numeric()
 data.full$education = data.full$education %>% as.numeric() 
@@ -87,20 +92,21 @@ data.full$month = data.full$month %>% as.numeric()
 data.full$day_of_week = data.full$day_of_week %>% as.numeric()
 data.full$poutcome = data.full$poutcome %>% as.numeric()
 
+# True data
 x_full = model.matrix(y~.,data.full)[,-1]
 
 y_full = data.full$y %>% 
   unlist() %>%
   as.numeric()
 
+# Offsetting by 1
 y_full = (ifelse(y_full == 2, 1, 0))
 
 ##### Model Selection
 
-
+# LASSO Feature Selection
 lasso_mod = glmnet(x_training,y_training,alpha = 1,family = "binomial")
 plot(lasso_mod)
-
 
 cv.out = cv.glmnet(x_training,y_training,alpha = 1,family = "binomial")
 
@@ -112,13 +118,12 @@ out = glmnet(x_full, y_full, alpha = 1)
 lasso_coef = predict(out, type = "coefficients", s = bestlam)[1:21,]
 lasso_coef
 
-
+# Storing columns that are not required
 rem_feat = c(5,6,14)
 
 
 ### Logistic Regression and Probabilities
 
-library(pROC)
 logistic_model = glm(y~.,data = data.train[,-rem_feat],family = "binomial")
 
 probabilities = logistic_model %>% predict(data.full[,-rem_feat], type = "response")
@@ -184,32 +189,16 @@ prob_fit = predict(rf.random,newdata = data.full.tree, type = "prob")
 head(prob_fit)
 roc_fit3 =roc(data.full.tree$y ~ prob_fit[,1],plot = TRUE, print.auc = TRUE)
 
-
-
-
 ### ROC PLOTS
-
-
-
 
 plot(roc_fit1,col = "Red")
 plot(roc_test2,add = TRUE,col = "Blue")
 plot(roc_fit3,add = TRUE, col = "Green")
 
-
-
-
-
-
-
-
-
-### EXtra Credit Neural Networks
+### Extra Credit Neural Networks
 library(tidyverse)
 library(neuralnet)
 set.seed(1)
-
-
 
 data.train = train.bank
 data.train[data.train == "unknown"] = NA
@@ -226,12 +215,9 @@ data.train$poutcome = data.train$poutcome %>% as.numeric()
 
 data.train = na.omit(data.train)
 
-
 data.train$y = ifelse(data.train$y == "yes",1,0)
 
-
 head(data.train)
-
 
 data.full = full.bank
 data.full[data.full == "unknown"] = NA
@@ -252,27 +238,14 @@ data.full$y = ifelse(data.full$y == "yes",1,0)
 
 head(data.full)
 
-
-
 nn = neuralnet(y~., data = data.train[,-rem_feat],linear.output = FALSE, hidden = 3,err.fct = "sse", act.fct = 
                  "logistic")
 plot(nn)
 
 Predict = predict(nn,data.full[,-rem_feat], type = "response")
 
-
 prob <- Predict
 pred <- ifelse(prob>0.5, 1, 0)
 
 head(y_full)
 mean(pred == y_full)
-
-
-
-
-
-
-
-
-
-
