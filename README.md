@@ -6,6 +6,6 @@ Project: Statistical Analysis of Bank Data
 - Ensemble Method - Random Forest (90.1% accuracy)
 - Neural Net (87.3% accuracy)
 
-![](https://github.com/amayk13/Statistical-Analysis-of-Bank-Data/blob/main/Decision%20Tree.png)
-![](https://github.com/amayk13/Statistical-Analysis-of-Bank-Data/blob/main/ROC%20AUC.png)
-![](https://github.com/amayk13/Statistical-Analysis-of-Bank-Data/blob/main/Neural%20Net.png)
+![](https://github.com/amayk13/Statistical-Analysis-on-Bank-Data/blob/main/Decision%20Tree.png)
+![](https://github.com/amayk13/Statistical-Analysis-on-Bank-Data/blob/main/ROC%20AUC.png)
+![](https://github.com/amayk13/Statistical-Analysis-on-Bank-Data/blob/main/Neural%20Net.png)
