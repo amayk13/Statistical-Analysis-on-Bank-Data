@@ -1,4 +1,4 @@
-Project: Statistical Analysis of Bank Data
+# Project: Statistical Analysis of Bank Data
 
 - Employed 4 algorithms and compared accuracies to predict likelihood of Bank Loan from customers
 - LASSO feature selection + Logistic Regression (89.98% accuracy)
